@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreStudentRequest;
+use App\Http\Requests\UpdateStudentRequest;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -23,42 +25,23 @@ class StudentController extends Controller
         ];
         return response()->json($data);
     }
-    public function store(Request $request)
+    public function store(StoreStudentRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'identifier' => 'required|unique:students',
-            'name' => 'required',
-            'email' => 'required|email',
-            'phone' => 'required|min:10|max:10',
-            'language' => 'required'
-        ]);
-        if ($validator->fails()) {
-            $data = [
-                'message' => 'Error en la validacion',
-                'errors' => $validator->errors(),
-                'status' => 400
-            ];
-            return response()->json($data, 400);
-            # code...
-        }
-        $student = Student::create($request->all());
-
+        // El request ya está validado en este punto
+        $student = Student::create($request->validated());
         if (!$student) {
-            # code...
-            $data = [
-                'message' => 'Error al crear el estudiante',
-                'status' => 500
-            ];
+
+            return response()->json(['message' => 'Error al crear el estudiante',
+                'status' => 500],500);
         }
-        $data = [
+
+        return response()->json([
             'student' => $student,
-
-            'status' => 500
-        ];
-
-        return response()->json($data, 201);
-
+            'message' => 'Estudiante creado con éxito',
+            'status' => 201
+        ], 201);
     }
+
     public function show($id)
     {
         $student = Student::find($id);
@@ -79,7 +62,7 @@ class StudentController extends Controller
 
 
     }
-    public function update(Request $request, $id)
+    public function update(UpdateStudentRequest $request, $id)
     {
         // Buscar estudiante por el identificador
         $student = Student::where('identifier', $id)->first();
@@ -92,32 +75,8 @@ class StudentController extends Controller
             return response()->json($data, 404);
         }
 
-        // Validación de los datos de entrada
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'phone' => 'required|min:10|max:10',
-        ]);
-
-        if ($validator->fails()) {
-            $data = [
-                'message' => 'Error en la validación',
-                'errors' => $validator->errors(),
-                'status' => 400  // Código 400 para error de validación
-            ];
-            return response()->json($data, 400);
-        }
-
-        // Actualizar el estudiante
-        $student->update($request->all());
-
-        // Si la actualización falla
-        if (!$student) {
-            $data = [
-                'message' => 'Error al actualizar el estudiante',
-                'status' => 500
-            ];
-            return response()->json($data, 500);
-        }
+        // Actualizar el estudiante con los datos validados
+        $student->update($request->validated());
 
         // Respuesta exitosa
         $data = [
@@ -128,6 +87,7 @@ class StudentController extends Controller
 
         return response()->json($data, 200);
     }
+
     public function destroy($id)
     {
         $student = Student::find($id);
@@ -147,4 +107,5 @@ class StudentController extends Controller
         return response()->json($data, 200);
 
     }
+
 }
